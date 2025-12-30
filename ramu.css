@@ -1,0 +1,78 @@
+body{
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    flex-direction:column;
+    padding-top:40px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+.zoom-toolbar{
+    display:flex;
+    height:80px;
+    width:900px;
+    justify-content:space-evenly;
+    align-items:center;
+    background-color:black;
+    border-radius:20px;
+    position:relative;
+}
+
+
+.tool{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    position:relative;
+}
+
+
+.tool i{
+    color:white;
+    font-size:20px;
+}
+
+.tool p{
+    margin:0;
+    font-size:12px;
+    color:#e6e6e6;
+}
+
+
+.tool p:first-child{
+    font-size:12px;
+    color:#bfbfbf;
+}
+
+
+.share-status{
+    width:900px;
+    display:flex;
+    margin-top:6px;  
+    border-radius:16px;
+    overflow:hidden;
+}
+
+
+.share-status span{
+    flex:3;
+    background-color:#6aff00;
+    color:black;
+    padding:10px;
+    text-align:center;
+    font-size:14px;
+    width: fit-content;
+}
+
+
+.share-status button{
+    flex:1;
+    background-color:red;
+    color:white;
+    border:none;
+    font-size:14px;
+    
+}

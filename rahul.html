@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SMART ATTENDANCE TRACKER</title>
+<style>
+:root{
+  --bg:#e0e5ec;
+  --card:rgba(255,255,255,0.15);
+  --accent:#3b82f6;
+  --muted:#6b7280;
+  --danger:#ef4444;
+  --shadow:0 8px 32px 0 rgba(31,38,135,0.37);
+}
+body{margin:0;font-family:Inter,Arial,sans-serif;background: linear-gradient(135deg,#a1c4fd,#c2e9fb);color:#111;}
+.container{max-width:980px;margin:28px auto;padding:18px;}
+.card{background: var(--card);border-radius: 20px;padding:16px;box-shadow: var(--shadow);backdrop-filter: blur(10px);-webkit-backdrop-filter: blur(10px);border:1px solid rgba(255,255,255,0.18);transition: 0.3s ease;}
+.card:hover { transform: translateY(-5px); }
+input[type=text],input[type=password],input[type=date],select{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background: rgba(255,255,255,0.25);color:#111;backdrop-filter: blur(5px);margin-bottom:10px;}
+button{padding:10px 14px;border-radius:12px;border:0;background: var(--accent);color:#fff;cursor:pointer;transition:0.3s;}
+button:hover{ box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent); }
+button.logout{ background:rgba(255,255,255,0.2); color:var(--accent); border:1px solid rgba(255,255,255,0.3); }
+button.danger{ background: var(--danger); }
+.flex{display:flex;gap:10px;align-items:center;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.2);}
+.actions button{margin-right:6px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);cursor:pointer;}
+.actions button:hover{ box-shadow: 0 0 5px var(--accent); }
+.menu { display:flex; gap:12px; margin-bottom:18px; }
+.menu button { background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3); padding:8px 14px; border-radius:12px; cursor:pointer; font-size:14px; display:flex; gap:8px; align-items:center; transition:0.3s;}
+.menu button.active { background:var(--accent); color:#fff; border-color:var(--accent); box-shadow: 0 0 12px var(--accent); }
+.section { display:none; }
+.percent-list{display:flex;flex-direction:column;gap:12px;}
+.percent-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background: rgba(255,255,255,0.2);box-shadow: var(--shadow);backdrop-filter: blur(8px);border:1px solid rgba(255,255,255,0.3);}
+.percent-info{flex:1;}
+.circle{width:72px;height:72px;position:relative;display:inline-block;}
+.circle svg{transform:rotate(-90deg);width:72px;height:72px;}
+.circle .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+#studentTable tbody tr:hover { background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); }
+#searchStudent { padding:8px; border-radius:10px; border:1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.25); margin-bottom:12px; width:100%; }
+.student-name{ cursor:pointer; color:#3b82f6; text-decoration:underline; }
+.small { font-size:13px; color:var(--muted); }
+.label { font-weight:600; margin-bottom:6px; display:block; }
+.center { text-align:center; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>SMART ATTENDANCE TRACKER</h1>
+  <div class="small">Frontend connected to backend</div>
+</header>
+
+<section id="loginSection" class="card">
+  <h2>Admin Login</h2>
+  <label class="label">Username</label>
+  <input id="username" type="text" placeholder="admin" />
+  <label class="label">Password</label>
+  <input id="password" type="password" placeholder="password123" />
+  <div class="flex" style="margin-top:10px;">
+    <button id="loginBtn">Login</button>
+    <button id="resetPasswordBtn" class="logout">Reset Password</button>
+  </div>
+  <div id="loginMsg" style="margin-top:10px;color:#fff;"></div>
+</section>
+
+<section id="dashboardSection" style="display:none">
+  <div class="flex" style="justify-content:space-between;margin-bottom:10px;">
+    <div class="card" style="padding:10px;">Welcome, Admin</div>
+    <div class="flex">
+      <input id="markDate" type="date" />
+      <button id="logoutBtn" class="logout">Logout</button>
+    </div>
+  </div>
+
+  <div class="menu">
+    <button id="menuAdd">👤 Add Student</button>
+    <button id="menuList">📋 Student List</button>
+    <button id="menuMark">📝 Mark Attendance</button>
+    <button id="menuPercent">📊 Percentage</button>
+  </div>
+
+  <div id="secAdd" class="section card">
+    <h3>Add Student</h3>
+    <label class="label">Roll Number</label>
+    <input id="sRoll" type="text" placeholder="e.g. 101" />
+    <label class="label">Name</label>
+    <input id="sName" type="text" placeholder="Student name" />
+    <label class="label">Batch</label>
+    <input id="sBatch" type="text" placeholder="Batch A" />
+    <button id="addStudentBtn">Add Student</button>
+    <div id="addMsg" style="margin-top:8px;"></div>
+  </div>
+
+  <div id="secList" class="section card">
+    <h3>Student List & Attendance</h3>
+    <input id="searchStudent" type="text" placeholder="Search Student..." />
+    <div style="overflow:auto;margin-top:10px;">
+      <table id="studentTable">
+        <thead>
+          <tr><th>Roll</th><th>Name</th><th>Batch</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="secMark" class="section card">
+    <h3>Mark Attendance</h3>
+    <label class="label">Select Student</label>
+    <select id="markStudentSelect"></select>
+    <label class="label">Date</label>
+    <input id="markDate2" type="date" />
+    <div class="flex" style="margin-top:8px;">
+      <button id="markPresentBtn">Mark Present</button>
+      <button id="markAbsentBtn" class="logout">Mark Absent</button>
+    </div>
+    <div id="markMsg" style="margin-top:10px;"></div>
+  </div>
+
+  <div id="secPercent" class="section card">
+    <h3>Percentage Report</h3>
+    <div id="percentContainer" class="percent-list"></div>
+    <div id="reportResult" style="margin-top:16px;"></div>
+  </div>
+</section>
+</div>
+
+<script>
+const API = 'http://localhost:5000';
+let token = localStorage.getItem('att_token') || '';
+
+// helper: common fetch with auth
+async function apiFetch(url, options = {}) {
+  if (!options.headers) options.headers = {};
+  if (token) options.headers['Authorization'] = 'Bearer ' + token;
+  try {
+    const res = await fetch(API + url, options);
+    // If token invalid or server returns non-json, handle gracefully
+    const contentType = res.headers.get('content-type') || '';
+    if (res.status === 401 || res.status === 403) throw new Error('Unauthorized');
+    if (contentType.includes('application/json')) return await res.json();
+    return await res.text();
+  } catch (err) {
+    console.error('apiFetch error', err);
+    throw err;
+  }
+}
+
+// ------- UI helpers -------
+function showDashboard(){
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('dashboardSection').style.display = 'block';
+  document.getElementById('menuList').click();
+  loadMarkStudentSelect();
+  loadPercentReport();
+}
+function showLogin(msg){
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('dashboardSection').style.display = 'none';
+  if (msg) document.getElementById('loginMsg').innerText = msg;
+}
+
+// --- initialize date inputs
+const today = new Date();
+const pad = n => String(n).padStart(2,'0');
+const isoDate = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+document.getElementById('markDate').value = isoDate;
+document.getElementById('markDate2').value = isoDate;
+
+// --- Login
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+  if (!username || !password) return alert('Enter username and password');
+  try {
+    const res = await apiFetch('/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password })});
+    if (res.token) {
+      token = res.token;
+      localStorage.setItem('att_token', token);
+      showDashboard();
+    } else {
+      showLogin(res.error || 'Login failed');
+    }
+  } catch (err){
+    showLogin('Login failed: ' + (err.message || 'network'));
+  }
+});
+
+// reset password (calls backend /admin/password)
+document.getElementById('resetPasswordBtn').addEventListener('click', async ()=>{
+  const username = prompt('Enter username to reset:');
+  const newPassword = prompt('Enter new password:');
+  if (!username || !newPassword) return;
+  try {
+    const res = await apiFetch('/admin/password', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, newPassword })});
+    alert(res.message || JSON.stringify(res));
+  } catch (e) {
+    alert('Failed to update password');
+  }
+});
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  token = '';
+  localStorage.removeItem('att_token');
+  showLogin();
+});
+
+// Menu navigation
+function hideAll(){ document.querySelectorAll('.section').forEach(s=>s.style.display='none'); document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active')); }
+document.getElementById('menuAdd').addEventListener('click', ()=>{ hideAll(); document.getElementById('secAdd').style.display='block'; document.getElementById('menuAdd').classList.add('active'); });
+document.getElementById('menuList').addEventListener('click', ()=>{ hideAll(); document.getElementById('secList').style.display='block'; document.getElementById('menuList').classList.add('active'); renderStudentList(); });
+document.getElementById('menuMark').addEventListener('click', ()=>{ hideAll(); document.getElementById('secMark').style.display='block'; document.getElementById('menuMark').classList.add('active'); loadMarkStudentSelect();});
+document.getElementById('menuPercent').addEventListener('click', ()=>{ hideAll(); document.getElementById('secPercent').style.display='block'; document.getElementById('menuPercent').classList.add('active'); loadPercentReport();});
+
+// Add Student
+document.getElementById('addStudentBtn').addEventListener('click', async ()=>{
+  const roll = document.getElementById('sRoll').value.trim();
+  const name = document.getElementById('sName').value.trim();
+  const batch = document.getElementById('sBatch').value.trim();
+  if (!roll || !name) return alert('Roll and Name required');
+  try {
+    const res = await apiFetch('/students', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roll, name, batch })});
+    document.getElementById('addMsg').innerText = res.message || 'Added';
+    document.getElementById('sRoll').value=''; document.getElementById('sName').value=''; document.getElementById('sBatch').value='';
+    renderStudentList();
+    loadMarkStudentSelect();
+  } catch (err){
+    alert('Failed to add student. Make sure you are logged in.');
+  }
+});
+
+// Render students
+async function renderStudentList(){
+  const tbody = document.querySelector('#studentTable tbody');
+  tbody.innerHTML = '<tr><td colspan="4" class="center small">Loading...</td></tr>';
+  try {
+    const students = await apiFetch('/students');
+    if (!Array.isArray(students)) return tbody.innerHTML = '<tr><td colspan="4">No students or unauthorized</td></tr>';
+    const q = document.getElementById('searchStudent').value.trim().toLowerCase();
+    let html = '';
+    for (const s of students) {
+      if (q && !(s.name||'').toLowerCase().includes(q) && !(s.roll||'').toLowerCase().includes(q)) continue;
+      html += `<tr data-id="${s._id}" data-roll="${s.roll}">
+                <td>${s.roll}</td>
+                <td class="student-name">${s.name}</td>
+                <td>${s.batch||''}</td>
+                <td class="actions"></td>
+               </tr>`;
+    }
+    tbody.innerHTML = html || '<tr><td colspan="4">No students found</td></tr>';
+    // attach actions
+    document.querySelectorAll('#studentTable tbody tr').forEach(tr=>{
+      const id = tr.dataset.id;
+      const roll = tr.dataset.roll;
+      const actions = tr.querySelector('.actions');
+
+      // Edit
+      const editBtn = document.createElement('button'); editBtn.textContent='Edit';
+      editBtn.onclick = async ()=>{
+        const newRoll = prompt('Edit Roll', tr.children[0].innerText) || tr.children[0].innerText;
+        const newName = prompt('Edit Name', tr.children[1].innerText) || tr.children[1].innerText;
+        const newBatch = prompt('Edit Batch', tr.children[2].innerText) || tr.children[2].innerText;
+        try {
+          await apiFetch(`/students/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roll:newRoll, name:newName, batch:newBatch })});
+          renderStudentList();
+          loadMarkStudentSelect();
+        } catch (e) { alert('Update failed'); }
+      };
+
+      // Delete
+      const delBtn = document.createElement('button'); delBtn.textContent='Delete'; delBtn.className='danger';
+      delBtn.onclick = async ()=>{
+        if (!confirm('Delete student?')) return;
+        try {
+          await apiFetch(`/students/${id}`, { method:'DELETE' });
+          renderStudentList();
+          loadMarkStudentSelect();
+        } catch (e) { alert('Delete failed'); }
+      };
+
+      // view attendance by clicking name
+      tr.querySelector('.student-name').addEventListener('click', async ()=>{
+        try {
+          const att = await apiFetch(`/attendance/${roll}`);
+          let html = `<strong>${tr.children[1].innerText} (${roll}) Attendance</strong>
+                      <table><thead><tr><th>Date</th><th>Status</th></tr></thead><tbody>`;
+          for (const a of att) html += `<tr><td>${a.date}</td><td>${a.status}</td></tr>`;
+          html += '</tbody></table>';
+          document.getElementById('reportResult').innerHTML = html;
+          hideAll(); document.getElementById('secPercent').style.display='block'; document.getElementById('menuPercent').classList.add('active');
+        } catch (e){
+          alert('Cannot fetch attendance. Make sure you are logged in.');
+        }
+      });
+
+      actions.appendChild(editBtn); actions.appendChild(delBtn);
+    });
+  } catch (err){
+    tbody.innerHTML = '<tr><td colspan="4">Error loading students. Are you logged in?</td></tr>';
+  }
+}
+document.getElementById('searchStudent').addEventListener('input', renderStudentList);
+
+// Mark attendance UI
+async function loadMarkStudentSelect(){
+  const sel = document.getElementById('markStudentSelect');
+  sel.innerHTML = '<option>Loading...</option>';
+  try {
+    const students = await apiFetch('/students');
+    if (!Array.isArray(students) || students.length===0) { sel.innerHTML='<option>No students</option>'; return; }
+    sel.innerHTML = '<option value="">-- Select student --</option>' + students.map(s=>`<option value="${s.roll}">${s.roll} — ${s.name}</option>`).join('');
+  } catch (e) {
+    sel.innerHTML = '<option>Login to load</option>';
+  }
+}
+
+document.getElementById('markPresentBtn').addEventListener('click', ()=>markAttendance('Present'));
+document.getElementById('markAbsentBtn').addEventListener('click', ()=>markAttendance('Absent'));
+
+async function markAttendance(status){
+  const roll = document.getElementById('markStudentSelect').value;
+  const date = document.getElementById('markDate2').value;
+  if (!roll) return alert('Select student');
+  try {
+    // POST /attendance expects { roll, date, status } — backend snippet below required
+    const res = await apiFetch('/attendance', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roll, date, status })});
+    document.getElementById('markMsg').innerText = res.message || 'Saved';
+    loadPercentReport();
+  } catch (e) {
+    alert('Failed to mark attendance. Make sure backend has POST /attendance and you are logged in.');
+  }
+}
+
+// Percentage report (simple calculation from attendance records)
+async function loadPercentReport(){
+  const container = document.getElementById('percentContainer');
+  container.innerHTML = '<div class="small">Loading...</div>';
+  try {
+    const students = await apiFetch('/students');
+    if (!Array.isArray(students) || students.length===0) { container.innerHTML = '<div>No students</div>'; return; }
+    const percentItems = [];
+    for (const s of students) {
+      const att = await apiFetch(`/attendance/${s.roll}`);
+      // att is array of { roll, date, status }
+      const total = att.length;
+      const present = att.filter(a=>a.status==='Present').length;
+      const pct = total === 0 ? 0 : Math.round((present/total)*100);
+      percentItems.push({ name: s.name, roll: s.roll, pct, present, total });
+    }
+    container.innerHTML = percentItems.map(p=>`
+      <div class="percent-item">
+        <div class="circle">
+          <svg viewBox="0 0 36 36">
+            <path d="M18 2.0845a15.9155 15.9155 0 1 0 0 31.831 15.9155 15.9155 0 1 0 0-31.831" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="4"/>
+            <path d="M18 2.0845a15.9155 15.9155 0 1 0 0 31.831" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="${p.pct},100"/>
+          </svg>
+          <div class="pct">${p.pct}%</div>
+        </div>
+        <div class="percent-info">
+          <div style="font-weight:700">${p.name} — ${p.roll}</div>
+          <div class="small">${p.present} present / ${p.total} total</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e){
+    container.innerHTML = '<div class="small">Error loading percentages. Make sure you are logged in.</div>';
+  }
+}
+
+// On page load: if token exists, show dashboard
+if (token) {
+  showDashboard();
+} else {
+  showLogin();
+}
+
+// helper: quick ping (not used, just useful)
+async function ping() {
+  try {
+    const res = await apiFetch('/');
+    console.log('ping', res);
+  } catch(e) { console.log('ping failed'); }
+}
+</script>
+</body>
+</html>

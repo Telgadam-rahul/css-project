@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SMART ATTENDANCE TRACKER</title>
+<style>
+:root{
+  --bg:#f6f8fb;
+  --card:#ffffff;
+  --accent:#3b82f6;
+  --muted:#6b7280;
+  --danger:#ef4444;
+}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:#111;}
+.container{max-width:980px;margin:28px auto;padding:18px;}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+header h1{font-size:20px;margin:0;}
+.muted{color:var(--muted);}
+.card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(15,23,42,0.06);}
+input[type=text],input[type=password],input[type=date]{width:100%;padding:10px;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:10px;}
+button{padding:10px 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;}
+button.logout{background:#fff;color:var(--accent);border:1px solid #dbeafe;}
+button.danger{background:var(--danger);}
+.flex{display:flex;gap:10px;align-items:center;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:8px;text-align:left;border-bottom:1px solid #f1f5f9;}
+.actions button{margin-right:6px;padding:6px 8px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;}
+.menu { display:flex; gap:12px; margin-bottom:18px; }
+.menu button { background:#ffffff; border:1px solid #cbd5e1; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:14px; display:flex; gap:8px; align-items:center; }
+.menu button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.section { display:none; }
+.percent-list{display:flex;flex-direction:column;gap:12px;}
+.percent-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:var(--card);}
+.percent-info{flex:1;}
+.circle{width:72px;height:72px;position:relative;display:inline-block;}
+.circle svg{transform:rotate(-90deg);width:72px;height:72px;}
+.circle .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+@media (max-width:880px){.percent-list{flex-direction:column;}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>SMART ATTENDANCE TRACKER</h1>
+  <div class="muted">Client-side · Local Storage</div>
+</header>
+
+<!-- LOGIN -->
+<section id="loginSection" class="card">
+  <h2>Admin Login</h2>
+  <label>Username</label>
+  <input id="username" type="text" placeholder="admin" />
+  <label>Password</label>
+  <input id="password" type="password" placeholder="password123" />
+  <div class="flex" style="margin-top:10px;">
+    <button id="loginBtn">Login</button>
+    <button id="clearDataBtn" class="logout">Clear All Data</button>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dashboardSection" style="display:none">
+  <div class="flex" style="justify-content:space-between;margin-bottom:10px;">
+    <div class="card" style="padding:10px;">Welcome, Admin</div>
+    <div class="flex">
+      <input id="markDate" type="date" />
+      <button id="logoutBtn" class="logout">Logout</button>
+    </div>
+  </div>
+
+  <div class="menu">
+    <button id="menuAdd">👤 Add Student</button>
+    <button id="menuList">📋 Student List</button>
+    <button id="menuPercent">📊 Percentage</button>
+  </div>
+
+  <div id="secAdd" class="section card">
+    <h3>Add Student</h3>
+    <label>Roll Number</label>
+    <input id="sRoll" type="text" placeholder="e.g. 101" />
+    <label>Name</label>
+    <input id="sName" type="text" placeholder="Student name" />
+    <label>Batch</label>
+    <input id="sBatch" type="text" placeholder="Batch A" />
+    <button id="addStudentBtn">Add Student</button>
+  </div>
+
+  <div id="secList" class="section card">
+    <h3>Student List & Attendance</h3>
+    <div class="muted small">Select date on top to mark attendance.</div>
+    <div style="overflow:auto;margin-top:10px;">
+      <table id="studentTable">
+        <thead>
+          <tr><th>Roll</th><th>Name</th><th>Batch</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="secPercent" class="section card">
+    <h3>Percentage Report</h3>
+    <div id="percentContainer" class="percent-list"></div>
+    <div id="reportResult" style="margin-top:16px;"></div>
+  </div>
+</section>
+</div>
+
+<script>
+const KEY_STUDENTS='students';
+const KEY_ATT='attendanceRecords';
+const KEY_ADMIN='adminCredentials';
+
+function initAdmin(){
+  if(!localStorage.getItem(KEY_ADMIN)){
+    localStorage.setItem(KEY_ADMIN,JSON.stringify({username:'admin',password:'password123'}));
+  }
+  if(!localStorage.getItem(KEY_STUDENTS)) localStorage.setItem(KEY_STUDENTS,JSON.stringify([]));
+  if(!localStorage.getItem(KEY_ATT)) localStorage.setItem(KEY_ATT,JSON.stringify({}));
+}
+
+function handleLogin(){
+  const u=document.getElementById('username').value.trim();
+  const p=document.getElementById('password').value.trim();
+  const creds=JSON.parse(localStorage.getItem(KEY_ADMIN));
+  if(u===creds.username && p===creds.password){
+    sessionStorage.setItem('isAuth','1');
+    showDashboard();
+  } else alert('Invalid credentials');
+}
+
+function logout(){
+  sessionStorage.removeItem('isAuth');
+  document.getElementById('loginSection').style.display='block';
+  document.getElementById('dashboardSection').style.display='none';
+}
+
+function getStudents(){ return JSON.parse(localStorage.getItem(KEY_STUDENTS)); }
+function saveStudents(arr){ localStorage.setItem(KEY_STUDENTS,JSON.stringify(arr)); }
+
+function addStudent(){
+  const roll=document.getElementById('sRoll').value.trim();
+  const name=document.getElementById('sName').value.trim();
+  const batch=document.getElementById('sBatch').value.trim();
+  if(!roll||!name){ alert('Roll & Name required'); return; }
+  const students=getStudents();
+  if(students.find(s=>String(s.roll)===String(roll))){ alert('Roll exists'); return; }
+  students.push({roll,name,batch});
+  saveStudents(students);
+  renderStudentList();
+  renderPercentList();
+  document.getElementById('sRoll').value=''; document.getElementById('sName').value=''; document.getElementById('sBatch').value='';
+}
+
+function renderStudentList(){
+  const tbody=document.querySelector('#studentTable tbody');
+  tbody.innerHTML='';
+  const students=getStudents();
+  const att=JSON.parse(localStorage.getItem(KEY_ATT)||'{}');
+  const selDate=document.getElementById('markDate').value;
+
+  students.forEach(s=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${s.roll}</td><td>${s.name}</td><td>${s.batch||''}</td><td class="actions"></td>`;
+    const actions=tr.querySelector('.actions');
+    const pBtn=document.createElement('button'); pBtn.textContent='P'; pBtn.onclick=(e)=>{e.stopPropagation(); markAttendance(s.roll,'P');};
+    const aBtn=document.createElement('button'); aBtn.textContent='A'; aBtn.onclick=(e)=>{e.stopPropagation(); markAttendance(s.roll,'A');};
+    actions.appendChild(pBtn); actions.appendChild(aBtn);
+    const statusSpan=document.createElement('span'); statusSpan.style.marginLeft='8px';
+    if(selDate && att[s.roll] && att[s.roll][selDate]) statusSpan.textContent='Status: '+att[s.roll][selDate];
+    actions.appendChild(statusSpan);
+
+    tr.addEventListener('click', ()=>openReportFor(s.roll));
+    tbody.appendChild(tr);
+  });
+}
+
+function markAttendance(roll,status){
+  const date=document.getElementById('markDate').value;
+  if(!date){ alert('Select a date'); return; }
+  const records=JSON.parse(localStorage.getItem(KEY_ATT)||'{}');
+  if(!records[roll]) records[roll]={};
+  records[roll][date]=status;
+  localStorage.setItem(KEY_ATT,JSON.stringify(records));
+  renderStudentList();
+  renderPercentList();
+}
+
+function calculatePercentage(roll){
+  const records=JSON.parse(localStorage.getItem(KEY_ATT)||'{}');
+  const hist=records[roll]||{};
+  const total=Object.keys(hist).length;
+  if(total===0) return 0;
+  const present=Object.values(hist).filter(x=>x==='P').length;
+  return Math.round((present/total)*100);
+}
+
+function renderPercentList(){
+  const cont=document.getElementById('percentContainer'); cont.innerHTML='';
+  const students=getStudents();
+  students.forEach(s=>{
+    const pct=calculatePercentage(s.roll);
+    const item=document.createElement('div'); item.className='percent-item';
+    item.innerHTML=`
+      <div class="circle" data-roll="${s.roll}">
+        <svg viewBox="0 0 36 36">
+          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e6eefc" stroke-width="3.5"></path>
+          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="${pct>60?'#16a34a':pct>30?'#f59e0b':'#ef4444'}" stroke-width="3.5" stroke-dasharray="${pct},100" stroke-linecap="round"></path>
+        </svg>
+        <div class="pct">${pct}%</div>
+      </div>
+      <div class="percent-info">
+        <div>${s.name} (${s.roll})</div>
+      </div>`;
+    item.querySelector('.circle').addEventListener('click',()=>openReportFor(s.roll));
+    cont.appendChild(item);
+  });
+}
+
+function openReportFor(roll){
+  hideAll();
+  document.getElementById('secPercent').style.display='block';
+  document.getElementById('menuPercent').classList.add('active');
+
+  const student=getStudents().find(s=>String(s.roll)===String(roll));
+  const records=JSON.parse(localStorage.getItem(KEY_ATT)||'{}');
+  const hist=records[roll]||{};
+  const dates=Object.keys(hist).sort();
+  const table=document.createElement('table'); table.innerHTML='<thead><tr><th>Date</th><th>Status</th></tr></thead>';
+  const tb=document.createElement('tbody'); let present=0;
+  dates.forEach(d=>{ 
+    const st=hist[d]; if(st==='P') present++; 
+    const tr=document.createElement('tr'); tr.innerHTML=`<td>${d}</td><td>${st}</td>`; tb.appendChild(tr);
+  });
+  table.appendChild(tb);
+  const total=dates.length; const percent=total===0?0:Math.round((present/total)*100);
+  const reportDiv=document.getElementById('reportResult'); reportDiv.innerHTML='';
+  const title=document.createElement('div'); title.innerHTML=`<strong>${student.name} (${student.roll})</strong> — ${present}/${total} present`;
+  reportDiv.appendChild(title);
+  reportDiv.appendChild(table);
+}
+
+function hideAll(){ document.querySelectorAll('.section').forEach(s=>s.style.display='none'); document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active')); }
+
+function showDashboard(){
+  document.getElementById('loginSection').style.display='none';
+  document.getElementById('dashboardSection').style.display='block';
+  document.getElementById('menuList').click();
+  renderStudentList(); renderPercentList();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  initAdmin();
+  if(sessionStorage.getItem('isAuth')) showDashboard();
+
+  const dt=new Date(); const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('markDate').value=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+
+  document.getElementById('loginBtn').addEventListener('click',handleLogin);
+  document.getElementById('logoutBtn').addEventListener('click',logout);
+  document.getElementById('addStudentBtn').addEventListener('click',addStudent);
+  document.getElementById('menuAdd').addEventListener('click',()=>{ hideAll(); document.getElementById('secAdd').style.display='block'; document.getElementById('menuAdd').classList.add('active'); });
+  document.getElementById('menuList').addEventListener('click',()=>{ hideAll(); document.getElementById('secList').style.display='block'; document.getElementById('menuList').classList.add('active'); renderStudentList(); });
+  document.getElementById('menuPercent').addEventListener('click',()=>{ hideAll(); document.getElementById('secPercent').style.display='block'; document.getElementById('menuPercent').classList.add('active'); renderPercentList(); });
+  document.getElementById('clearDataBtn').addEventListener('click',()=>{ localStorage.clear(); location.reload(); });
+});
+</script>
+</body>
+</html>
