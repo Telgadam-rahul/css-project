@@ -205,3 +205,6 @@ border-color: solid rgb(209, 54, 54);
 h2{
     color:azure
 }
+h2::first-letter{
+    color:chartreuse;
+}
